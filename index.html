@@ -1,1 +1,178 @@
-<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>¡Huye, amiga, huye!</title><link rel="icon" href="data:,"><style>body{margin:0;min-height:100vh;background:#ffe8f3;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6f2450}h1{margin:12px}#game{border:7px solid #fff;border-radius:18px;box-shadow:0 10px 30px #b94b8744;overflow:hidden}p{font-size:14px;text-align:center}canvas{display:block;max-width:100%}</style></head><body><h1>💗 ¡HUYE, AMIGA, HUYE! 💗</h1><div id="game"></div><p>Muévete con WASD o flechas · Sobrevive el mayor tiempo posible</p><script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script><script src="game.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff0f7">
+  <link rel="icon" href="data:,">
+  <title>¡Huye, amiga, huye! — Edición móvil</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: light; }
+    html { min-height:100%; }
+    body {
+      margin:0; min-height:100dvh; padding:14px 10px max(14px,env(safe-area-inset-bottom));
+      background:radial-gradient(ellipse at 20% 5%, #ffe6ef, #f5ebff 52%, #e8f7f2);
+      color:#6b355f; font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
+      display:flex; flex-direction:column; align-items:center; gap:8px;
+    }
+    h1 { font-size:clamp(20px,3vw,29px); margin:0; letter-spacing:-.04em; color:#a13777; text-align:center; }
+    .sub { margin:0 0 3px; font-size:13px; color:#956789; text-align:center; }
+    .play-layout { width:min(100%,960px); display:flex; flex-direction:column; align-items:center; gap:10px; }
+    #game {
+      width:100%; aspect-ratio:8/5; position:relative; flex:none;
+      border:5px solid #fff; border-radius:18px; overflow:hidden;
+      box-shadow:0 18px 50px #9c508b34; background:#fff3f9;
+      /* El tamaño de Phaser siempre es 960 × 600: CSS solo lo adapta a la pantalla. */
+      touch-action:none; -webkit-user-select:none; user-select:none;
+    }
+    #game canvas { width:100% !important; height:100% !important; display:block; touch-action:none; }
+    #drag-stick {
+      position:absolute; width:86px; height:86px; left:0; top:0; display:none;
+      border:3px solid #fff9; border-radius:50%; background:#b74e9870;
+      box-shadow:0 0 0 2px #b64f7b66; pointer-events:none; transform:translate(-50%,-50%);
+      z-index:4;
+    }
+    #drag-stick.active { display:block; }
+    #stick-dot {position:absolute;width:33px;height:33px;left:50%;top:50%;border-radius:50%;background:#fff5fd;border:2px solid #e866aa;transform:translate(-50%,-50%);}
+    #mobile-status { display:none; width:100%; text-align:center; font-weight:700; font-size:13px; padding:7px 8px; border-radius:12px; background:#fff8fd; color:#a13a78; }
+    .mobile { display:none; width:100%; gap:12px; align-items:center; justify-content:space-around; }
+    .pad { display:grid; grid-template-columns:repeat(3,58px); grid-template-rows:repeat(3,50px); gap:5px; touch-action:none; }
+    .control {
+      border:2px solid #fff; background:#f39cc4; color:#682450;
+      border-radius:13px; box-shadow:0 3px 0 #c56f9b; font-size:23px; font-weight:700;
+      cursor:pointer; -webkit-user-select:none; user-select:none; touch-action:none;
+      -webkit-tap-highlight-color:transparent; min-height:44px;
+    }
+    .control:active, .control.down { background:#d966a0; transform:translateY(2px); box-shadow:0 1px 0 #b95581; }
+    .control[data-dir="up"] { grid-column:2;grid-row:1; }
+    .control[data-dir="left"] { grid-column:1;grid-row:2; }
+    .control[data-dir="down"] { grid-column:2;grid-row:2; }
+    .control[data-dir="right"] { grid-column:3;grid-row:2; }
+    .saves { display:flex; flex-direction:column; gap:8px; font-size:12px; text-align:center; }
+    .saves strong { color:#994278; }
+    .saves .control { min-width:112px; font-size:15px; padding:9px 6px; }
+    .saves .control.used { opacity:.4; filter:grayscale(1); }
+    .instructions { max-width:920px; font-size:13px; text-align:center; line-height:1.6; margin:3px; }
+    .help { font-size:11px; text-align:center; max-width:850px; color:#87677f; }
+    .rotate-hint { display:none; text-align:center; font-size:12px; color:#965579; }
+    @media (pointer:coarse), (max-width:700px) {
+      body { padding-top:9px; }
+      .mobile, #mobile-status {display:flex;}
+      #mobile-status {justify-content:center;}
+      .instructions {font-size:12px;}
+      .rotate-hint {display:block;}
+    }
+    @media (max-width:410px) {
+      .pad {grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,46px);gap:4px;}
+      .saves .control {min-width:100px;}
+      .mobile { gap:4px; }
+    }
+    /* Horizontal: escenario grande a la izquierda y controles al lado, sin tapar la partida. */
+    @media (pointer:coarse) and (orientation:landscape) and (max-height:540px) {
+      body {padding:5px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left)); gap:3px;}
+      h1 {display:none;} .sub,.instructions,.help,.rotate-hint{display:none;}
+      .play-layout {width:100%;flex-direction:row;align-items:center;justify-content:center;gap:8px;}
+      #game {width:min(calc(100vw - 229px),calc((100svh - 40px) * 1.6));border-width:3px;border-radius:12px;}
+      .mobile {width:210px;flex-direction:column;gap:5px;justify-content:center;}
+      .pad {grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,45px);gap:3px;}
+      .saves {width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:4px;}
+      .saves strong {width:100%;font-size:11px;}
+      .saves .control {min-width:62px;font-size:12px;min-height:38px;padding:5px 2px;}
+      #mobile-status {font-size:11px;padding:2px 5px;}
+    }
+  </style>
+</head>
+<body>
+  <h1>💗 ¡HUYE, AMIGA, HUYE! 🚩</h1>
+  <p class="sub">Edición capítulos • Una vida • Sami, Paul y Ali al rescate • Andy te protege</p>
+  <div id="mobile-status" aria-live="off">💗 Toca HISTORIA o MODO INFINITO para jugar</div>
+  <div class="play-layout">
+    <main id="game" aria-label="Videojuego de persecución en Phaser 3">
+      <div id="drag-stick" aria-hidden="true"><div id="stick-dot"></div></div>
+    </main>
+    <section class="mobile" aria-label="Controles táctiles">
+      <div class="pad" aria-label="Mover a la chica con botones direccionales">
+        <button type="button" class="control" data-dir="up" aria-label="Arriba">▲</button>
+        <button type="button" class="control" data-dir="left" aria-label="Izquierda">◀</button>
+        <button type="button" class="control" data-dir="down" aria-label="Abajo">▼</button>
+        <button type="button" class="control" data-dir="right" aria-label="Derecha">▶</button>
+      </div>
+      <div class="saves"><strong>🛟 Comodines · una vez cada uno</strong>
+        <button type="button" class="control" id="helper0" data-helper="0">Sami</button>
+        <button type="button" class="control" id="helper1" data-helper="1">Paul</button>
+        <button type="button" class="control" id="helper2" data-helper="2">Ali</button>
+      </div>
+    </section>
+  </div>
+  <p class="rotate-hint">📱 Para ver el mapa más grande, gira tu celular horizontalmente. También puedes deslizar el dedo sobre el mapa para moverte.</p>
+  <p class="instructions"><strong>PC:</strong> WASD o flechas; 1, 2, 3 para comodines. <strong>Celular:</strong> toca las flechas o arrastra el dedo sobre el escenario. Toca los botones de Sami, Paul o Ali cuando haya peligro; también te rescatan automáticamente al atraparte.</p>
+  <p class="help">Abre el juego con Live Server o GitHub Pages. Necesitas Internet para cargar Phaser 3. Los récords se guardan en este navegador.</p>
+  <script>
+    // Únicamente entrada táctil nativa del navegador: sin librerías ni motores nuevos.
+    window.CONTROL_TACTIL={up:false,down:false,left:false,right:false};
+    window.CONTROL_JOYSTICK={x:0,y:0};
+    const padPresionado=new Map();
+    for(const b of document.querySelectorAll('[data-dir]')) {
+      const d=b.dataset.dir;
+      b.addEventListener('pointerdown',e=>{
+        e.preventDefault();
+        try {b.setPointerCapture(e.pointerId);} catch (_) {}
+        padPresionado.set(e.pointerId,d);
+        window.CONTROL_TACTIL[d]=true;b.classList.add('down');
+      });
+      const soltar=e=>{
+        if(padPresionado.get(e.pointerId)!==d)return;
+        padPresionado.delete(e.pointerId);
+        window.CONTROL_TACTIL[d]=Array.from(padPresionado.values()).includes(d);
+        b.classList.toggle('down',window.CONTROL_TACTIL[d]);
+      };
+      for(const ev of ['pointerup','pointercancel','lostpointercapture']) b.addEventListener(ev,soltar);
+    }
+    for(const b of document.querySelectorAll('[data-helper]')){
+      b.addEventListener('click',()=>window.usarComodin?.(Number(b.dataset.helper)));
+    }
+
+    const gameArea=document.getElementById('game');
+    const visual=document.getElementById('drag-stick');
+    const stickDot=document.getElementById('stick-dot');
+    let dedoActivo=null, origenX=0, origenY=0;
+    function actualizarJoystick(e){
+      const dx=e.clientX-origenX,dy=e.clientY-origenY;
+      const radio=42,dist=Math.hypot(dx,dy)||1,escala=Math.min(1,dist/radio);
+      const x=dx/dist*escala,y=dy/dist*escala;
+      window.CONTROL_JOYSTICK.x=x;window.CONTROL_JOYSTICK.y=y;
+      stickDot.style.transform=`translate(calc(-50% + ${x*radio}px),calc(-50% + ${y*radio}px))`;
+    }
+    gameArea.addEventListener('pointerdown',e=>{
+      // El joystick solo funciona durante la partida; los menús siguen siendo clicables.
+      if(!window.huyeEstaJugando?.() || dedoActivo!==null || e.target.tagName!=='CANVAS')return;
+      e.preventDefault(); dedoActivo=e.pointerId;origenX=e.clientX;origenY=e.clientY;
+      try {gameArea.setPointerCapture(e.pointerId);} catch (_) {}
+      const caja=gameArea.getBoundingClientRect();
+      visual.style.left=`${origenX-caja.left}px`;visual.style.top=`${origenY-caja.top}px`;
+      visual.classList.add('active'); actualizarJoystick(e);
+    });
+    gameArea.addEventListener('pointermove',e=>{if(e.pointerId===dedoActivo)actualizarJoystick(e);});
+    const soltarJoystick=e=>{
+      if(e.pointerId!==dedoActivo)return;
+      dedoActivo=null;window.CONTROL_JOYSTICK.x=0;window.CONTROL_JOYSTICK.y=0;
+      visual.classList.remove('active');stickDot.style.transform='translate(-50%,-50%)';
+    };
+    for(const ev of ['pointerup','pointercancel','lostpointercapture'])gameArea.addEventListener(ev,soltarJoystick);
+    function limpiarControlesTactiles(){
+      padPresionado.clear();
+      for(const d of Object.keys(window.CONTROL_TACTIL))window.CONTROL_TACTIL[d]=false;
+      document.querySelectorAll('[data-dir]').forEach(b=>b.classList.remove('down'));
+      dedoActivo=null;window.CONTROL_JOYSTICK.x=0;window.CONTROL_JOYSTICK.y=0;
+      visual.classList.remove('active');
+    }
+    window.resetearMovimientoTactil=limpiarControlesTactiles;
+    window.addEventListener('blur',limpiarControlesTactiles);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)limpiarControlesTactiles();});
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  <script src="frases.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
