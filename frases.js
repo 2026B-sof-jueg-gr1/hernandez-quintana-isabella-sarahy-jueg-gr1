@@ -176,8 +176,5 @@ const FRASES = {
     "Quería ser sincero, pero no sabía por dónde empezar.",
     "Te mereces estabilidad, solo que ahora no la tengo.",
     "¿Me das otra oportunidad de explicarlo distinto?"
-  ],
-  "Andy": [
-    "Ni siquiera somos amigos, ¿Por qué tendríamos algo?"
   ]
 };

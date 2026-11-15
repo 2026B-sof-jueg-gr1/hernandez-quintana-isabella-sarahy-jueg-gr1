@@ -81,11 +81,45 @@
       .saves .control {min-width:62px;font-size:12px;min-height:38px;padding:5px 2px;}
       #mobile-status {font-size:11px;padding:2px 5px;}
     }
+    /* Editor de personaje: controles HTML para teclado, táctil y lectores de pantalla. */
+    #game canvas { image-rendering:pixelated; }
+    #editor-prota { width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:2px solid #e9bbd0;border-radius:22px;background:#fffaf6;color:#694559;box-shadow:0 24px 90px #38213755;overflow:auto; }
+    #editor-prota::backdrop {background:#302336b8;backdrop-filter:blur(5px);}
+    .look-form {padding:26px;}
+    .look-form header {margin-bottom:22px;}
+    .look-eyebrow {font-size:10px;letter-spacing:.18em;font-weight:800;color:#a46c85;margin:0 0 9px;}
+    .look-form h2 {font-size:clamp(22px,4vw,30px);letter-spacing:-.04em;margin:0;color:#773d60;}
+    .look-form h2 span {color:#c77599;}
+    .look-form header>p:last-child {font-size:13px;margin:8px 0 0;color:#997b88;}
+    .look-layout {display:grid;grid-template-columns:210px 1fr;gap:25px;}
+    .look-preview {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 10px;background:repeating-conic-gradient(#f3e7e2 0% 25%,#f8f0e9 0% 50%) 0 0 / 24px 24px;border:1px solid #e8d6ce;border-radius:14px;}
+    .look-badge {font-size:9px;letter-spacing:.2em;color:#98726f;background:#fff9ed;padding:6px 10px;border:1px solid #dfc9b5;}
+    #look-retrato {width:162px;height:192px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 8px 0 #7b60651a);}
+    #look-nombre {font-size:20px;color:#76536b;overflow-wrap:anywhere;text-align:center;max-width:180px;}
+    .look-preview>span:last-child {font-size:10px;color:#9c7d87;}
+    .look-fields {display:flex;flex-direction:column;gap:17px;min-width:0;}
+    .look-name {display:flex;flex-direction:column;gap:7px;font-weight:700;font-size:13px;}
+    .look-name input {width:100%;border:1px solid #dfc3cf;border-radius:9px;background:white;padding:11px 12px;color:#6e435f;font:inherit;font-size:16px;}
+    .look-name small {font-size:10px;font-weight:400;color:#997e8c;line-height:1.5;}
+    .look-fields fieldset {border:0;padding:0;margin:0;min-width:0;}
+    .look-fields legend {font-size:13px;font-weight:700;padding:0;margin-bottom:8px;}
+    .look-options {display:flex;flex-wrap:wrap;gap:6px;}
+    .look-option {position:relative;display:flex;align-items:center;gap:6px;border:1px solid #e7d3dc;border-radius:8px;padding:8px;background:#fff;font-size:11px;cursor:pointer;}
+    .look-option input {position:absolute;opacity:0;width:1px;height:1px;}
+    .look-option:has(input:checked) {background:#f7e4ee;border-color:#b36a92;box-shadow:inset 0 0 0 1px #b36a92;}
+    .look-option:has(input:focus-visible),.look-form input:focus-visible,.look-form button:focus-visible {outline:3px solid #7d91bc;outline-offset:3px;}
+    .look-swatch {width:16px;height:16px;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px #cfb9c2;border-radius:3px;}
+    .look-form footer {display:flex;align-items:center;justify-content:space-between;gap:15px;border-top:1px solid #ecdce2;padding-top:20px;margin-top:24px;}
+    #look-guardado {font-size:10px;color:#997e8c;}
+    .look-form button {border:0;border-radius:10px;background:#a85480;box-shadow:0 3px 0 #7b3c60;padding:13px 22px;color:white;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;}
+    .look-form button:hover {background:#93446f;}
+    @media(max-width:570px){.look-form{padding:18px;}.look-layout{grid-template-columns:1fr;gap:18px;}.look-preview{display:grid;grid-template-columns:96px 1fr;padding:12px;gap:8px 14px;}.look-badge{grid-column:2;grid-row:1;justify-self:start;}#look-retrato{width:81px;height:96px;grid-column:1;grid-row:1 / 4;}#look-nombre{grid-column:2;grid-row:2;text-align:left;font-size:18px;max-width:100%;}.look-preview>span:last-child{grid-column:2;grid-row:3;}.look-form footer{flex-wrap:wrap;}.look-form button{width:100%;}.look-option{min-height:40px;}}
+
   </style>
 </head>
 <body>
   <h1>💗 ¡HUYE, AMIGA, HUYE! 🚩</h1>
-  <p class="sub">Edición capítulos • Una vida • Sami, Paul y Ali al rescate • Busca a Andy · Martín: delivery de sorpresas</p>
+  <p class="sub">Edición capítulos • Una vida • Sami, Paul y Ali al rescate • Martín: delivery de sorpresas</p>
   <div id="mobile-status" aria-live="off">💗 Toca HISTORIA o MODO INFINITO para jugar</div>
   <div class="play-layout">
     <main id="game" aria-label="Videojuego de persecución en Phaser 3">
@@ -106,7 +140,7 @@
     </section>
   </div>
   <p class="rotate-hint">📱 Para ver el mapa más grande, gira tu celular horizontalmente. También puedes deslizar el dedo sobre el mapa para moverte.</p>
-  <p class="instructions"><strong>PC:</strong> WASD o flechas; 1, 2, 3 para comodines. <strong>Celular:</strong> toca las flechas o arrastra el dedo sobre el escenario. Toca los botones de Sami, Paul o Ali cuando haya peligro; también te rescatan automáticamente al atraparte. <strong>Andy:</strong> huye; alcánzalo para congelar a los perseguidores 7 segundos. <strong>Martín:</strong> va en moto; cada encuentro tiene 50 % de ayuda y 50 % de lío.</p>
+  <p class="instructions"><strong>PC:</strong> WASD o flechas; 1, 2, 3 para comodines. <strong>Celular:</strong> toca las flechas o arrastra el dedo sobre el escenario. Toca los botones de Sami, Paul o Ali cuando haya peligro; también te rescatan automáticamente al atraparte. <strong>Martín:</strong> va en moto; cada encuentro tiene 50 % de ayuda y 50 % de lío.</p>
   <p class="help">Abre el juego con Live Server o GitHub Pages. Necesitas Internet para cargar Phaser 3. Los récords se guardan en este navegador.</p>
   <script>
     // Únicamente entrada táctil nativa del navegador: sin librerías ni motores nuevos.
@@ -173,6 +207,8 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
   <script src="frases.js"></script>
+  <script src="sprites.js"></script>
+  <script src="personalizacion.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
